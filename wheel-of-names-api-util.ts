@@ -77,13 +77,16 @@ async function handleFormDataResponse(response: Response): Promise<{
   winner: WheelEntry;
 }> {
   if (!response.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
-    if (response.headers.get('Content-Type') === 'application/json') {
+    const contentType = response.headers.get('Content-Type') ?? '(none)';
+    if (contentType.includes('application/json')) {
       const data = await response.json();
       if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
         throw Error(data.error);
       }
+      throw Error(`The Wheel of Names API returned an unexpected JSON response (HTTP ${response.status}): ${JSON.stringify(data)}`);
     }
-    throw Error('The Wheel of Names API returned an invalid response.');
+    const body = await response.text().catch(() => '(unreadable)');
+    throw Error(`The Wheel of Names API returned an unexpected response (HTTP ${response.status}, Content-Type: ${contentType}): ${body.slice(0, 500)}`);
   }
   // This API is "deprecated", but the undici team have no intention of removing it. You can
   // probably ignore this warning, depending on how much memory your bot has and how much usage it
