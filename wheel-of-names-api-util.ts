@@ -3,10 +3,27 @@ import { env } from 'node:process';
 const { WHEEL_OF_NAMES_API_KEY } = env;
 if (!WHEEL_OF_NAMES_API_KEY) throw Error('WHEEL_OF_NAMES_API_KEY not set!');
 
-export async function getSpinAnimation(texts: string[]): Promise<{
+export interface WheelEntry {
+  text: string;
+  discordId?: string;
+  color?: string;
+}
+
+export interface WheelConfig {
+  entries: WheelEntry[];
+  spinTime?: number;
+  maxNames?: number;
+  pageBackgroundColor?: string;
+  winnerMessage?: string;
+  colorSettings?: { colors: string[] };
+  shuffleEntries?: boolean;
+  loop?: boolean;
+}
+
+export async function getSpinAnimation(wheelConfig: WheelConfig): Promise<{
   animation: Buffer;
   imageFormat: 'gif' | 'webp';
-  winner: Record<string, any>;
+  winner: WheelEntry;
 }> {
   // Change this to `gif` if you want GIFs instead. GIFs render faster, but have a larger file size.
   const imageFormat = 'webp' satisfies 'gif' | 'webp' as 'gif' | 'webp';
@@ -24,17 +41,15 @@ export async function getSpinAnimation(texts: string[]): Promise<{
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      // This is where you can customize your wheel. You can find the documentation at
-      // https://wheelofnames.com/api-doc. Find the WheelConfig schema to see all available options.
       wheelConfig: {
-        entries: texts.map((text) => ({ text })),
         // I recommend keeping `spinTime` low to guarantee that Discord doesn't reject it for being
         // too large. This also makes the animations render faster.
         spinTime: 3,
         // I recommend keeping `maxNames` low so that the texts are legible. There is also an
         // increasingly large risk the the animation fails to render the more entries are visible at
         // once. This setting can also impact render time.
-        maxNames: 120
+        maxNames: 120,
+        ...wheelConfig
       },
       imageFormat,
       responseFormat,
@@ -59,14 +74,11 @@ export async function getSpinAnimation(texts: string[]): Promise<{
 
 async function handleFormDataResponse(response: Response): Promise<{
   animation: Buffer;
-  winner: Record<string, any>;
+  winner: WheelEntry;
 }> {
-  // If the Wheel of Names API doesn't send the right type of response, parse the error.
   if (!response.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
     if (response.headers.get('Content-Type') === 'application/json') {
       const data = await response.json();
-      // This is the standard API error response format. If you sent an invalid WheelConfig, that
-      // error will be handled here.
       if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
         throw Error(data.error);
       }
@@ -77,9 +89,8 @@ async function handleFormDataResponse(response: Response): Promise<{
   // probably ignore this warning, depending on how much memory your bot has and how much usage it
   // gets. Read more: https://github.com/nodejs/undici/issues/4388#issuecomment-3301932142
   const formData = await response.formData();
-  const winner = JSON.parse(formData.get('winner')?.toString() ?? 'null');
+  const winner = JSON.parse(formData.get('winner')?.toString() ?? 'null') as WheelEntry;
   const file = formData.get('animation');
-  // Type-narrowing for TypeScript's benefit
   if (!file || typeof file !== 'object') {
     throw Error('The Wheel of Names API returned an invalid response.');
   }
@@ -92,16 +103,14 @@ async function handleFormDataResponse(response: Response): Promise<{
 
 async function handleJsonResponse(response: Response): Promise<{
   animation: Buffer;
-  winner: Record<string, any>;
+  winner: WheelEntry;
 }> {
-  // Expect correct response type
   if (response.headers.get('Content-Type') !== 'application/json') {
     throw Error('The Wheel of Names API returned an invalid response.');
   }
   const data = (await response.json()) as
     | { error: string }
-    | { animation: string; winner: Record<string, any> };
-  // Standard Wheel of Names API error response
+    | { animation: string; winner: WheelEntry };
   if ('error' in data) throw Error(data.error);
   return {
     animation: Buffer.from(data.animation, 'base64'),

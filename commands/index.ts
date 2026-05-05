@@ -1,18 +1,20 @@
 import type {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
-  SlashCommandOptionsOnlyBuilder
+  SlashCommandSubcommandsOnlyBuilder
 } from 'discord.js';
-import spin from './spin.ts';
+import wheel from './wheel/index.ts';
+import help from './help.ts';
 
 const commands: Record<
   string,
   {
-    data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+    data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     execute: (interaction: ChatInputCommandInteraction) => Promise<any>;
   }
 > = {
-  spin
+  wheel,
+  help
 };
 
 export default commands;

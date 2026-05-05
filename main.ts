@@ -1,10 +1,12 @@
 import { env } from 'node:process';
-import { Client, Events, MessageFlags } from 'discord.js';
+import { Client, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
 import commands from './commands/index.ts';
 
 const { DISCORD_TOKEN } = env;
 
-const client = new Client({ intents: [] });
+// GuildMembers is a privileged intent — enable it in the Discord Developer Portal.
+// It is required for /wheel members to fetch server member lists.
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
