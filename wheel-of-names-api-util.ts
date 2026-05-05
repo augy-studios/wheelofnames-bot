@@ -15,7 +15,7 @@ export interface WheelConfig {
   maxNames?: number;
   pageBackgroundColor?: string;
   winnerMessage?: string;
-  colorSettings?: { colors: string[] };
+  colorSettings?: string[];
   shuffleEntries?: boolean;
   loop?: boolean;
 }
