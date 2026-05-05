@@ -17,6 +17,7 @@ const route = DISCORD_GUILD_ID
   ? Routes.applicationGuildCommands(clientId, DISCORD_GUILD_ID)
   : Routes.applicationCommands(clientId);
 
+console.log(`Client ID: ${clientId}`);
 console.log(DISCORD_GUILD_ID ? `Deploying commands to guild ${DISCORD_GUILD_ID}...` : 'Deploying commands globally...');
 
 await rest.put(route, { body });
