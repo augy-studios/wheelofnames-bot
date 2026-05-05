@@ -11,8 +11,14 @@ const rest = new REST().setToken(DISCORD_TOKEN);
 
 const body = Object.values(commands).map(({ data }) => data.toJSON());
 
-console.log('Deploying commands...');
+const { DISCORD_GUILD_ID } = env;
 
-await rest.put(Routes.applicationCommands(clientId), { body });
+const route = DISCORD_GUILD_ID
+  ? Routes.applicationGuildCommands(clientId, DISCORD_GUILD_ID)
+  : Routes.applicationCommands(clientId);
+
+console.log(DISCORD_GUILD_ID ? `Deploying commands to guild ${DISCORD_GUILD_ID}...` : 'Deploying commands globally...');
+
+await rest.put(route, { body });
 
 console.log(`Successfully deployed ${body.length} commands!`);
