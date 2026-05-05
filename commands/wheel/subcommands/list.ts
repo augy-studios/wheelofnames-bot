@@ -104,7 +104,7 @@ export function buildWheelConfig(interaction: ChatInputCommandInteraction): Whee
 
   const theme = interaction.options.getString('theme');
   if (theme && themeDictionary[theme]) {
-    config.colorSettings = { colors: themeDictionary[theme] };
+    config.colorSettings = themeDictionary[theme];
   }
 
   const bgColor = interaction.options.getString('backgroundcolor');
