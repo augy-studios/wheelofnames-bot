@@ -34,6 +34,11 @@ export async function getSpinAnimation(wheelConfig: WheelConfig): Promise<{
   if (responseFormat !== 'formData' && responseFormat !== 'json') {
     throw Error('Invalid response format specified');
   }
+  // Strip local-only fields (discordId) that the API schema doesn't accept.
+  const apiEntries = wheelConfig.entries.map(({ text, color }) =>
+    color !== undefined ? { text, color } : { text }
+  );
+
   const response = await fetch('https://wheelofnames.com/api/v2/wheels/animate', {
     method: 'POST',
     headers: {
@@ -49,7 +54,8 @@ export async function getSpinAnimation(wheelConfig: WheelConfig): Promise<{
         // increasingly large risk the the animation fails to render the more entries are visible at
         // once. This setting can also impact render time.
         maxNames: 120,
-        ...wheelConfig
+        ...wheelConfig,
+        entries: apiEntries
       },
       imageFormat,
       responseFormat,
@@ -65,6 +71,10 @@ export async function getSpinAnimation(wheelConfig: WheelConfig): Promise<{
         ? await handleJsonResponse(response)
         : null;
   if (!data) throw Error('Invalid responseFormat specified');
+
+  // Re-attach discordId from the original entries list by matching on text.
+  const originalEntry = wheelConfig.entries.find((e) => e.text === data.winner.text);
+  if (originalEntry?.discordId) data.winner.discordId = originalEntry.discordId;
 
   return {
     ...data,
